@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>期中自我檢核佐證｜植物養護站</title><link rel="stylesheet" href="css/style.css"></head>
+<body>
+<header class="site-header"><h1>期中自我檢核佐證</h1><nav aria-label="主選單"><a href="index.html">回專題首頁</a></nav></header>
+<main>
+<section><h2>專題簡介</h2>
+<p>「植物養護站」協助想養植物的新手依光線、澆水頻率與難度挑選植物、加入清單並登記預購，還能詢問在自己電腦上執行的本地 AI 養護顧問。植物資料與價格皆為虛構。</p></section>
+<section><h2>五項自我檢核</h2>
+<h3>1. HTML、表單（20）</h3>
+<p>index.html 使用 header、nav、main、section、article、footer 語意標籤；預購登記表單用 form、fieldset、legend、label for，欄位含 text、tel、email、select、radio、checkbox、textarea，並有 required 與 Vue 驗證訊息。</p>
+<h3>2. CSS、RWD（20）</h3>
+<p>css/style.css：CSS 變數、Flexbox（導覽列、篩選列）、Grid（<code>repeat(auto-fill,minmax(220px,1fr))</code> 卡片牆），並以 <code>@media (max-width:768px)</code> 改為直向堆疊；index.html 含 viewport meta。</p>
+<h3>3. JavaScript、Vue（20）</h3>
+<p>js/app.js 使用 Vue 3 Composition API：ref、reactive、computed（篩選、驗證、合計）、v-model、v-for、v-if、@click、@submit.prevent，並處理「送出中」停用按鈕避免重複送出。</p>
+<h3>4. 本地 AI 串接（20）</h3>
+<p>js/app.js 的 loadModels() 與 ask() 以 fetch 呼叫 LM Studio（127.0.0.1:1234，/v1/chat/completions）或 Ollama（127.0.0.1:11434，/api/chat）；有 System Prompt、512 tokens 限制、120 秒逾時、失敗保留問題、清除 &lt;think&gt; 標籤。介面在 index.html 的「AI 養護顧問」區。</p>
+<h3>5. 提示工程、AI 協作、元件化（20）</h3>
+<p>元件化：js/components.js 的 PlantCard 以 props 接收 plant、selected，以 emits 回報 toggle，同一定義在列表中重複使用。AI 協作：下方為需求拆解與提示詞紀錄。</p></section>
+<section><h2>提示詞紀錄（需求拆解四步驟）</h2>
+<ul>
+<li><strong>目標：</strong>讓植物新手依環境與時間挑到養得活的植物，並能問養護問題。</li>
+<li><strong>畫面功能：</strong>植物卡片列表＋篩選、想養清單、預購登記表單與驗證、結果訊息、本地 AI 問答。</li>
+<li><strong>資料來源：</strong>js/data.js 的 8 筆虛構植物；使用者輸入的登記資料；本地 AI 回答。</li>
+<li><strong>限制條件：</strong>純前端靜態網站、Vue 3、手機寬度 768px 以下可用、無後端（登記為示範）、AI 只依植物資料回答。</li>
+</ul>
+<p>與 AI 協作的完整提示詞、迭代追問與測試截圖，請見繳交資料；本專案由 AI 依上述規格產出雛形，再由我實際測試與修正。</p></section>
+</main>
+<footer><p><a href="index.html">回專題首頁</a></p></footer>
+</body></html>

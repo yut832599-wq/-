@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>植物養護站｜互動式網頁設計期中專題</title>
+<meta name="description" content="新手選植物、登記預購與本地 AI 養護顧問（Vue 3 + LM Studio / Ollama）">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<header class="site-header">
+  <h1>🌿 植物養護站</h1>
+  <nav aria-label="主選單">
+    <a href="#plants">選植物</a><a href="#join">預購登記</a><a href="#ai">AI 養護顧問</a><a href="evidence.html">期中佐證</a>
+  </nav>
+</header>
+
+<main id="app">
+  <!-- 1. 植物列表：Vue v-for + 元件 PlantCard（props / emits） -->
+  <section id="plants" aria-labelledby="h-plants">
+    <h2 id="h-plants">選植物</h2>
+    <form class="filters" role="search" @submit.prevent>
+      <label>搜尋 <input type="search" v-model="q" placeholder="例如：好養、耐陰"></label>
+      <label>類型
+        <select v-model="cat"><option v-for="c in cats" :key="c">{{ c }}</option></select>
+      </label>
+      <label class="inline"><input type="checkbox" v-model="onlyOpen"> 只看有現貨</label>
+    </form>
+    <p aria-live="polite">共 {{ list.length }} 種植物，已加入清單 {{ picked.length }} 種</p>
+    <div class="grid">
+      <plant-card v-for="p in list" :key="p.id" :plant="p" :selected="picked.includes(p.id)" @toggle="toggle"></plant-card>
+    </div>
+    <p v-if="!list.length">找不到符合條件的植物，請換個關鍵字。</p>
+  </section>
+
+  <!-- 2. 預購登記表單：fieldset / label、v-model、computed 驗證 -->
+  <section id="join" aria-labelledby="h-join">
+    <h2 id="h-join">預購登記</h2>
+    <form @submit.prevent="submit" novalidate>
+      <fieldset>
+        <legend>聯絡資料</legend>
+        <div class="row">
+          <label for="name">姓名</label>
+          <input id="name" v-model.trim="form.name" autocomplete="name" required>
+          <p class="err" v-if="tried && errors.name">{{ errors.name }}</p>
+        </div>
+        <div class="row">
+          <label for="phone">手機</label>
+          <input id="phone" type="tel" v-model.trim="form.phone" placeholder="0912345678" autocomplete="tel" required>
+          <p class="err" v-if="tried && errors.phone">{{ errors.phone }}</p>
+        </div>
+        <div class="row">
+          <label for="email">Email</label>
+          <input id="email" type="email" v-model.trim="form.email" autocomplete="email" required>
+          <p class="err" v-if="tried && errors.email">{{ errors.email }}</p>
+        </div>
+        <div class="row">
+          <label for="env">擺放環境</label>
+          <select id="env" v-model="form.env"><option value="">請選擇</option><option>室內窗邊</option><option>室內無窗</option><option>陽台</option><option>戶外</option></select>
+        </div>
+      </fieldset>
+      <fieldset>
+        <legend>取貨方式</legend>
+        <label class="inline"><input type="radio" value="自取" v-model="form.slot"> 自取</label>
+        <label class="inline"><input type="radio" value="宅配" v-model="form.slot"> 宅配</label>
+      </fieldset>
+      <div class="row">
+        <label for="note">備註（例如：養過哪些植物）</label>
+        <textarea id="note" rows="3" v-model="form.note"></textarea>
+      </div>
+      <p>已選植物：{{ pickedPlants.map(p => p.name).join('、') || '尚未選擇' }}（合計 {{ total }} 元）</p>
+      <p class="err" v-if="tried && errors.picked">{{ errors.picked }}</p>
+      <label class="inline"><input type="checkbox" v-model="form.agree"> 我同意以上資料僅供示範使用</label>
+      <p class="err" v-if="tried && errors.agree">{{ errors.agree }}</p>
+      <button type="submit" :disabled="sending">{{ sending ? '送出中…' : '送出登記' }}</button>
+    </form>
+    <article v-if="result" class="result" aria-live="polite">
+      <h3>預購登記已送出</h3>
+      <p>登記編號：<strong>{{ result.no }}</strong>（示範系統，資料不會上傳，也不是正式訂單）</p>
+      <p>{{ result.name }}，已登記：{{ result.plants.join('、') }}（{{ result.slot }}）</p>
+    </article>
+  </section>
+
+  <!-- 3. 本地 AI 養護顧問：fetch 呼叫 LM Studio / Ollama -->
+  <section id="ai" aria-labelledby="h-ai">
+    <h2 id="h-ai">AI 養護顧問（本地模型）</h2>
+    <p class="hint">需先在自己的電腦啟動 LM Studio（Developer → Start server，開啟 Enable CORS）或 Ollama。資料不會傳到雲端。</p>
+    <div class="row2">
+      <label>服務
+        <select v-model="ai.provider" @change="ai.base = ai.provider === 'ollama' ? 'http://127.0.0.1:11434' : 'http://127.0.0.1:1234'">
+          <option value="lmstudio">LM Studio</option><option value="ollama">Ollama</option>
+        </select>
+      </label>
+      <label>伺服器網址 <input v-model.trim="ai.base"></label>
+      <button type="button" @click="loadModels">取得模型清單</button>
+    </div>
+    <label>模型 <select v-model="ai.model"><option v-for="m in ai.models" :key="m">{{ m }}</option></select></label>
+    <label for="q">想問什麼？</label>
+    <textarea id="q" rows="3" v-model="ai.q" placeholder="例如：我家陽台很曬，哪一種植物比較適合？"></textarea>
+    <button type="button" @click="ask" :disabled="ai.busy || !ai.q.trim() || !ai.model">{{ ai.busy ? 'AI 正在回答…' : '送出問題' }}</button>
+    <p class="err" v-if="ai.err" role="alert">{{ ai.err }}</p>
+    <output v-if="ai.a" class="answer">{{ ai.a }}</output>
+  </section>
+</main>
+
+<footer><p>互動式網頁設計期中專題｜植物資料與價格皆為虛構示範｜<a href="evidence.html">自我檢核佐證</a></p></footer>
+
+<script src="https://cdn.jsdelivr.net/npm/vue@3/dist/vue.global.prod.js"></script>
+<script src="js/data.js"></script>
+<script src="js/components.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
